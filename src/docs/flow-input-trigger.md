@@ -4,6 +4,7 @@
 - 管理全局热键、软件内热键、低级键盘钩子、Ctrl+CC、鼠标划词与剪贴板监听。
 - 将触发事件统一路由到 `MainWindowViewModel` 命令。
 - 根据热键可用状态与全屏策略同步托盘图标状态。
+- 统一模拟复制后的取词超时、取词失败回退与取词文本分隔符处理。
 
 ## 关键入口
 - `STranslate/Core/HotkeySettings.cs`
@@ -13,12 +14,15 @@
   - `SetHotkey()`：NHotkey/ChefKeys 注册。
   - `StartGlobalKeyboardMonitoring()`：低级键盘钩子（WH_KEYBOARD_LL）。
   - `RegisterHoldKey()`：按住键增量翻译。
+  - `IsReservedGlobalHotkey()`：阻止把系统复制热键注册为全局热键。
 - `STranslate/Helpers/CtrlSameCHelper.cs`
   - 监听 Ctrl+C 双击（500ms 窗口）。
 - `STranslate/Helpers/MouseKeyHelper.cs`
   - 鼠标拖拽结束后读取选中文本并触发事件。
 - `STranslate/Helpers/ClipboardMonitor.cs`
   - `AddClipboardFormatListener` 监听剪贴板变更。
+- `STranslate/Core/Settings.cs`
+  - `SelectedTextFetchTimeoutMs`、`TextSeparatorHandleType`、`TextSeparatorHandleScopes`、`CrosswordFetchFailedFallbackTarget`。
 - `STranslate/Views/MainWindow.xaml`
   - `Window.InputBindings`：软件内热键（设置、历史、置顶、自动翻译等）。
 
@@ -42,9 +46,31 @@
 - 鼠标划词：`MouseKeyHelper` 在拖拽完成后读选中文本，触发 `ExecuteTranslate()`。
 - 剪贴板监听：`ClipboardMonitor` 收到 `WM_CLIPBOARDUPDATE` 后读取文本，触发 `OnClipboardTextChanged -> ExecuteTranslate()`。
 
+### 从入口到结果：取词超时、后处理与失败回退
+1. 需要模拟复制读取选中文本的入口会调用 `ClipboardHelper.GetSelectedTextAsync(Settings.SelectedTextFetchTimeoutMs)`。
+2. `SelectedTextFetchTimeoutMs` 在 `Settings` 中限制为 50~5000 毫秒；鼠标划词监听通过委托实时读取当前配置。
+3. 取到文本后统一进入 `MainWindowViewModel.HandleCapturedText(text, scope)`：
+   - 先执行 `LineBreakHandleType` 换行处理。
+   - 再按 `TextSeparatorHandleType` 与 `TextSeparatorHandleScopes` 对 `_` / `-` 做可选分隔符处理。
+4. 当前取词作用域包括：
+   - `MouseHook`：监听鼠标划词。
+   - `Crossword`：划词翻译与 `Ctrl+C+C`。
+   - `Incremental`：按住键增量翻译。
+   - `ClipboardMonitor`：剪贴板监听翻译。
+   - `ScreenshotTranslate`：截图翻译 OCR 结果。
+   - `SilentOcr`：静默 OCR 写入剪贴板结果。
+5. 划词翻译取词失败时按 `CrosswordFetchFailedFallbackTarget` 分支：
+   - `InputTranslate`：清空输入并显示主窗口，回退到输入翻译。
+   - `ShowWindow`：仅显示主窗口，保留当前输入和结果。
+
 ### 软件内热键
 - 主窗口、OCR 窗口、图片翻译窗口通过 `InputBindings` 绑定 `HotkeySettings.*Hotkey.Key`。
 - 软件内热键不经过系统级注册，焦点窗口内生效。
+
+### 全局热键保留规则
+- `Ctrl + C` 是系统复制和划词取词保留热键。
+- 全局热键设置对话框会用 `HotkeyMapper.TryGetReservedGlobalHotkeyMessageKey()` 给出提示并禁用保存。
+- 注册阶段仍会在 `HotkeyMapper.SetHotkey()` 二次拦截，避免配置文件手工写入导致误注册。
 
 ### 托盘状态联动
 - `HotkeySettings.UpdateTrayIconWithPriority()` 优先级：
@@ -61,6 +87,10 @@
   - `IgnoreHotkeysOnFullscreen`
   - `CrosswordTranslateByCtrlSameC`
   - `IncrementalTranslateKey`
+  - `SelectedTextFetchTimeoutMs`
+  - `TextSeparatorHandleType`
+  - `TextSeparatorHandleScopes`
+  - `CrosswordFetchFailedFallbackTarget`
 
 ## 关键文件
 - `STranslate/Core/HotkeySettings.cs`
@@ -76,3 +106,4 @@
 - 新增软件内热键：在对应窗口 XAML `InputBindings` 绑定 `HotkeySettings` 键值。
 - 解决热键冲突：优先查看 `GlobalHotkey.IsConflict` 与 `HotkeyMapper.SetHotkey` 异常日志。
 - 调整全屏忽略策略：统一改 `HotkeyMapper.ShouldSkipHotkey()` 与 `HotkeySettings.WithFullscreenCheck()`。
+- 新增模拟复制类取词入口：必须接入 `SelectedTextFetchTimeoutMs` 并明确 `TextSeparatorHandleScope`，避免新增入口与现有入口处理不一致。
