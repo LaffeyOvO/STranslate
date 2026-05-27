@@ -1540,7 +1540,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         await OpenSettingsInternalAsync(parameter);
     }
 
-    internal async Task<SettingsWindow> OpenSettingsWindowInternalAsync(
+    internal async Task<SettingsWindow> OpenSettingsInternalAsync(
         object? parameter,
         WindowActivationMode activationMode = WindowActivationMode.Normal)
     {
@@ -1561,16 +1561,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         await OpenHistoryInternalAsync();
     }
 
-    internal async Task OpenSettingsInternalAsync(
-        object? parameter,
-        WindowActivationMode activationMode = WindowActivationMode.Normal)
-    {
-        await OpenSettingsWindowInternalAsync(parameter, activationMode);
-    }
-
     internal async Task OpenHistoryInternalAsync(WindowActivationMode activationMode = WindowActivationMode.Normal)
     {
-        var window = await OpenSettingsWindowInternalAsync(null, activationMode);
+        var window = await OpenSettingsInternalAsync(null, activationMode);
         window.Navigate(nameof(HistoryPage));
     }
 
