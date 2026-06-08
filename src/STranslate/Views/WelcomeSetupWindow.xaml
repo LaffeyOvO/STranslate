@@ -137,7 +137,7 @@
                             <ComboBox
                                 Width="230"
                                 DisplayMemberPath="Name"
-                                ItemsSource="{Binding TranslateService.Plugins}"
+                                ItemsSource="{Binding WelcomeTranslatePlugins}"
                                 SelectedItem="{Binding SelectedTranslatePlugin}" />
                             <Button
                                 Command="{Binding AddTranslateServiceCommand}"
@@ -192,7 +192,7 @@
                             <ComboBox
                                 Width="230"
                                 DisplayMemberPath="Name"
-                                ItemsSource="{Binding OcrService.Plugins}"
+                                ItemsSource="{Binding WelcomeOcrPlugins}"
                                 SelectedItem="{Binding SelectedOcrPlugin}" />
                             <Button
                                 Command="{Binding AddOcrServiceCommand}"
@@ -236,7 +236,7 @@
                             <ComboBox
                                 Width="230"
                                 DisplayMemberPath="Name"
-                                ItemsSource="{Binding TtsService.Plugins}"
+                                ItemsSource="{Binding WelcomeTtsPlugins}"
                                 SelectedItem="{Binding SelectedTtsPlugin}" />
                             <Button
                                 Command="{Binding AddTtsServiceCommand}"

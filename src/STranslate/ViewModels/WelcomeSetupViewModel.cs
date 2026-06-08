@@ -20,6 +20,7 @@ public partial class WelcomeSetupViewModel : ObservableObject, IDisposable
 
     private readonly NotifyCollectionChangedEventHandler _translateServicesChangedHandler;
     private readonly NotifyCollectionChangedEventHandler _ocrServicesChangedHandler;
+    private readonly Internationalization _i18n;
 
     /// <summary>
     /// Creates wizard state from the existing settings and service managers.
@@ -38,6 +39,7 @@ public partial class WelcomeSetupViewModel : ObservableObject, IDisposable
         HotkeySettings = hotkeySettings;
         ServiceSettings = serviceSettings;
         DataProvider = dataProvider;
+        _i18n = i18n;
         Languages = i18n.LoadAvailableLanguages();
         TranslateService = translateService;
         OcrService = ocrService;
@@ -49,9 +51,11 @@ public partial class WelcomeSetupViewModel : ObservableObject, IDisposable
         TranslateService.Services.CollectionChanged += _translateServicesChangedHandler;
         OcrService.Services.CollectionChanged += _ocrServicesChangedHandler;
 
-        SelectedTranslatePlugin = TranslateService.Plugins.FirstOrDefault();
-        SelectedOcrPlugin = OcrService.Plugins.FirstOrDefault();
-        SelectedTtsPlugin = TtsService.Plugins.FirstOrDefault();
+        RefreshWelcomePluginOptions();
+
+        SelectedTranslatePlugin = WelcomeTranslatePlugins.FirstOrDefault();
+        SelectedOcrPlugin = WelcomeOcrPlugins.FirstOrDefault();
+        SelectedTtsPlugin = WelcomeTtsPlugins.FirstOrDefault();
 
         SelectedTranslateService = TranslateService.Services.FirstOrDefault(s => s.IsEnabled)
             ?? TranslateService.Services.FirstOrDefault();
@@ -83,6 +87,12 @@ public partial class WelcomeSetupViewModel : ObservableObject, IDisposable
     public ObservableCollection<Service> AvailableTranslateSpecialServices { get; } = [];
 
     public ObservableCollection<Service> AvailableOcrServices { get; } = [];
+
+    public ObservableCollection<PluginMetaData> WelcomeTranslatePlugins { get; } = [];
+
+    public ObservableCollection<PluginMetaData> WelcomeOcrPlugins { get; } = [];
+
+    public ObservableCollection<PluginMetaData> WelcomeTtsPlugins { get; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StepProgressText))]
@@ -282,6 +292,38 @@ public partial class WelcomeSetupViewModel : ObservableObject, IDisposable
     {
         ReplaceItems(AvailableOcrServices, OcrService.Services);
         OnPropertyChanged(nameof(SelectedImageTranslateOcrService));
+    }
+
+    private void RefreshWelcomePluginOptions()
+    {
+        ReplaceItems(WelcomeTranslatePlugins, SortWelcomePlugins(TranslateService.Plugins));
+        ReplaceItems(WelcomeOcrPlugins, SortWelcomePlugins(OcrService.Plugins));
+        ReplaceItems(WelcomeTtsPlugins, SortWelcomePlugins(TtsService.Plugins));
+    }
+
+    private IEnumerable<PluginMetaData> SortWelcomePlugins(IEnumerable<PluginMetaData> plugins) =>
+        plugins
+            .OrderBy(GetWelcomePluginRank)
+            .ThenBy(plugin => plugin.Name, StringComparer.OrdinalIgnoreCase);
+
+    private int GetWelcomePluginRank(PluginMetaData plugin)
+    {
+        if (IsBuiltInPlugin(plugin))
+            return 0;
+
+        return plugin.IsPrePlugin ? 1 : 2;
+    }
+
+    private bool IsBuiltInPlugin(PluginMetaData plugin)
+    {
+        if (!plugin.IsPrePlugin)
+            return false;
+
+        var builtInText = _i18n.GetTranslation("BuiltIn");
+        return plugin.Name.Contains(builtInText, StringComparison.OrdinalIgnoreCase) ||
+               plugin.Name.Contains("Built-in", StringComparison.OrdinalIgnoreCase) ||
+               plugin.Name.Contains("BuiltIn", StringComparison.OrdinalIgnoreCase) ||
+               plugin.AssemblyName.Contains("BuiltIn", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void ReplaceItems<T>(ObservableCollection<T> target, IEnumerable<T> source)
