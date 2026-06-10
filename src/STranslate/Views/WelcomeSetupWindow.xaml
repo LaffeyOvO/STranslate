@@ -100,8 +100,8 @@
                                                    Duration=250}"
                 VerticalScrollBarVisibility="Auto"
                 Visibility="{Binding SelectedStepIndex, Converter={cnvt:EqualToVisibilityConverter}, ConverterParameter=0}">
-                <ikw:SimpleStackPanel Spacing="18">
-                    <ikw:SimpleStackPanel Spacing="6">
+                <ikw:SimpleStackPanel Spacing="8">
+                    <ikw:SimpleStackPanel Margin="0,0,0,6" Spacing="6">
                         <TextBlock Style="{DynamicResource {x:Static ui:ThemeKeys.SubtitleTextBlockStyleKey}}" Text="{DynamicResource WelcomeSetup_Title}" />
                         <TextBlock
                             Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
