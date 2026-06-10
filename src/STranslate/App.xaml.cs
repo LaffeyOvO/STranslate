@@ -318,9 +318,9 @@ public partial class App : ISingleInstanceApp, INavigation, IDisposable
         {
             var welcomeWindow = new WelcomeSetupWindow();
             ThemeManager.SetRequestedTheme(welcomeWindow, _settings.NonNull().ColorScheme);
-            welcomeWindow.Loaded += (_, _) =>
+            welcomeWindow.ContentRendered += (_, _) =>
             {
-                Win32Helper.ForceSetForegroundWindow(welcomeWindow);
+                Win32Helper.SetForegroundWindow(welcomeWindow);
                 welcomeWindow.Activate();
             };
             welcomeWindow.ShowDialog();
