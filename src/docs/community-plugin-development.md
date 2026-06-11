@@ -6,10 +6,12 @@
 - 与 [插件 SDK 与开发范式](plugin-sdk-development.md) 分工：SDK 文档说明接口和模型，本指南说明开发调试流程。
 
 ## 前置约定
-- 插件项目目标框架应与宿主兼容，推荐使用 `net10.0-windows` 并开启 WPF。
-- 社区插件即使放在主仓库 `Plugins/ThirdPlugins` 下调试，也优先引用 NuGet 包 `STranslate.Plugin`；官方内置插件维护时才使用 `ProjectReference` 指向 `STranslate.Plugin/STranslate.Plugin.csproj`。
-- `Plugins/ThirdPlugins` 是本地调试工作区，主仓库通过 `.gitignore` 忽略该目录；每个社区插件目录保留或重新初始化自己的 `.git`，提交和推送在插件仓库内完成。
-- 不要直接实现 `IPlugin`，按能力选择：
+- clone `STranslate` 主程序源码，并在 `Plugins/ThirdPlugins` 目录下创建插件子目录。
+- 推荐在 `Plugins/ThirdPlugins` 目录下 clone [STranslate 组织](https://github.com/orgs/STranslate/repositories)下同类型插件进行修改调试
+- 插件目录重新初始化自己的 `.git`，提交和推送在插件仓库内完成。
+- 社区插件即使放在主仓库 `Plugins/ThirdPlugins` 下调试，也优先引用 NuGet 包 `STranslate.Plugin`
+- `Plugins/ThirdPlugins` 是本地调试工作区，主仓库通过 `.gitignore` 忽略该目录
+- 不要直接实现 `IPlugin`，按能力选择（了解即可）：
   - 文本翻译：继承 `TranslatePluginBase`。
   - 大模型翻译：继承 `LlmTranslatePluginBase`。
   - 词典：继承 `DictionaryPluginBase`。
@@ -263,3 +265,18 @@ Plugins\ThirdPlugins\STranslate.Plugin.Translate.DeepLX\.artifacts\plugins\STran
 - 测试取消：翻译、OCR、TTS、下载、流式响应都应能响应宿主传入的取消令牌。
 - 核对 `plugin.json` 的 `PluginID`、`Version`、`Website`、`ExecuteFileName`、`IconPath`，这些字段会影响安装、升级、展示和排障。
 - 若插件依赖远程服务，避免在 README 或示例配置中提交真实密钥。
+
+### 自动发布
+按照本文档前述方式从 STranslate 组织仓库 clone 并修改的插件，其项目已内置 GitHub Actions 发布工作流，无需手动本地打包。代码修改完成后，直接创建并推送以 `v` 开头的 Tag 即可触发自动打包并发布：
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+- Tag 命名**必须**以 `v` 开头，例如 `v1.0.0`、`v1.2.3`。
+- 推送后 Actions 会自动执行 Release 构建、生成 `.spkg` 并发布到 GitHub Releases。
+
+## 插件收录
+
+社区插件发布到插件市场前，请先阅读 [STranslate-doc](https://github.com/STranslate/STranslate-doc) 仓库中的发布规范与收录说明，确保插件信息、版本策略及元数据符合官方市场要求。
