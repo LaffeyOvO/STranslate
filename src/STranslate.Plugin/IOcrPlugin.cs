@@ -128,15 +128,9 @@ public class OcrResult
                !char.IsWhiteSpace(right) &&
                !char.IsPunctuation(left) &&
                !char.IsPunctuation(right) &&
-               !IsCjk(left) &&
-               !IsCjk(right);
+               !TextHelper.IsCjk(left) &&
+               !TextHelper.IsCjk(right);
     }
-
-    private static bool IsCjk(char ch) =>
-        (ch >= '\u3400' && ch <= '\u9fff') ||
-        (ch >= '\uf900' && ch <= '\ufaff') ||
-        (ch >= '\u3040' && ch <= '\u30ff') ||
-        (ch >= '\uac00' && ch <= '\ud7af');
 }
 
 /// <summary>

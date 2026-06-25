@@ -47,7 +47,7 @@ internal static class ImageTranslateTextOverlayLayout
         ImageTranslateOverlayTheme overlayTheme = ImageTranslateOverlayTheme.Light)
     {
         var lineRects = block.LineBoxPoints
-            .Select(CalculateBoundingRect)
+            .Select(BoxPointLayout.BoundingRect)
             .Where(rect => !rect.IsEmpty && rect.Width > 0 && rect.Height > 0)
             .ToList();
 
@@ -139,7 +139,7 @@ internal static class ImageTranslateTextOverlayLayout
 
     private static bool ShouldKeepCollapsedSpace(char previous, char current)
     {
-        if (IsCjk(previous) || IsCjk(current))
+        if (TextHelper.IsCjk(previous) || TextHelper.IsCjk(current))
             return false;
 
         if (char.IsPunctuation(current))
@@ -150,12 +150,6 @@ internal static class ImageTranslateTextOverlayLayout
 
         return true;
     }
-
-    private static bool IsCjk(char ch) =>
-        (ch >= '\u3400' && ch <= '\u9fff') ||
-        (ch >= '\uf900' && ch <= '\ufaff') ||
-        (ch >= '\u3040' && ch <= '\u30ff') ||
-        (ch >= '\uac00' && ch <= '\ud7af');
 
     private static (double FontSize, bool ShouldTrim) FitFontSize(
         double fontSizeLimit,
@@ -245,18 +239,6 @@ internal static class ImageTranslateTextOverlayLayout
         var width = Math.Max(1, rect.Width - horizontalPadding * 2);
         var height = Math.Max(1, rect.Height - verticalPadding * 2);
         return new Rect(rect.Left + horizontalPadding, rect.Top + verticalPadding, width, height);
-    }
-
-    private static Rect CalculateBoundingRect(IReadOnlyList<BoxPoint> boxPoints)
-    {
-        if (boxPoints.Count == 0)
-            return Rect.Empty;
-
-        var minX = boxPoints.Min(p => p.X);
-        var minY = boxPoints.Min(p => p.Y);
-        var maxX = boxPoints.Max(p => p.X);
-        var maxY = boxPoints.Max(p => p.Y);
-        return new Rect(minX, minY, maxX - minX, maxY - minY);
     }
 
     private static double Median(IEnumerable<double> values)

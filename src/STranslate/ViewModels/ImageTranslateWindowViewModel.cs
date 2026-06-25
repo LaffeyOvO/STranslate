@@ -786,7 +786,7 @@ public partial class ImageTranslateWindowViewModel : ObservableObject, IDisposab
         double pixelsPerDip,
         Brush measureTextBrush)
     {
-        var boundingRect = CalculateBoundingRect(content.BoxPoints);
+        var boundingRect = BoxPointLayout.BoundingRect(content.BoxPoints);
         if (boundingRect.IsEmpty || boundingRect.Width <= 0 || boundingRect.Height <= 0)
             return null;
 
@@ -1045,22 +1045,6 @@ public partial class ImageTranslateWindowViewModel : ObservableObject, IDisposab
 #endif
 
         return layoutBlocks;
-    }
-
-    /// <summary>
-    /// 根据坐标点计算边界矩形
-    /// </summary>
-    private static Rect CalculateBoundingRect(List<BoxPoint> boxPoints)
-    {
-        if (boxPoints == null || boxPoints.Count == 0)
-            return Rect.Empty;
-
-        var minX = boxPoints.Min(p => p.X);
-        var minY = boxPoints.Min(p => p.Y);
-        var maxX = boxPoints.Max(p => p.X);
-        var maxY = boxPoints.Max(p => p.Y);
-
-        return new Rect(minX, minY, maxX - minX, maxY - minY);
     }
 
     #endregion

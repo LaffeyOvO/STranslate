@@ -607,7 +607,7 @@ internal static class OcrLayoutAnalyzer
         if (char.IsWhiteSpace(left) || char.IsWhiteSpace(right))
             return false;
 
-        if (IsCjk(left) || IsCjk(right))
+        if (TextHelper.IsCjk(left) || TextHelper.IsCjk(right))
             return false;
 
         if (char.IsPunctuation(left) || char.IsPunctuation(right))
@@ -617,6 +617,7 @@ internal static class OcrLayoutAnalyzer
     }
 
     private static bool ShouldMergeHyphenated(string previous, string current)
+
     {
         if (previous.Length < 2 || string.IsNullOrWhiteSpace(current))
             return false;
@@ -731,14 +732,9 @@ internal static class OcrLayoutAnalyzer
     private static bool IsLatinLetter(char ch) =>
         (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
 
-    private static bool IsCjk(char ch) =>
-        (ch >= '\u3400' && ch <= '\u9fff') ||
-        (ch >= '\uf900' && ch <= '\ufaff') ||
-        (ch >= '\u3040' && ch <= '\u30ff') ||
-        (ch >= '\uac00' && ch <= '\ud7af');
-
     private static double VerticalGap(Bounds top, Bounds bottom) =>
         Math.Max(0, bottom.Top - top.Bottom);
+
 
     private static double HorizontalOverlapRatio(Bounds first, Bounds second)
     {
