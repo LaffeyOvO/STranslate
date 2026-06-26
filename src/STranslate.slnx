@@ -39,6 +39,7 @@
     <Project Path="Plugins/STranslate.Plugin.Ocr.OpenAI/STranslate.Plugin.Ocr.OpenAI.csproj" />
     <Project Path="Plugins/STranslate.Plugin.Ocr.WeChatBuiltIn/STranslate.Plugin.Ocr.WeChatBuiltIn.csproj" />
     <Project Path="Plugins/STranslate.Plugin.Ocr.Google/STranslate.Plugin.Ocr.Google.csproj" />
+    <Project Path="Plugins/STranslate.Plugin.Ocr.Tencent/STranslate.Plugin.Ocr.Tencent.csproj" />
 
     <!-- 其他插件 -->
     <Project Path="Plugins/STranslate.Plugin.Tts.MicrosoftEdge/STranslate.Plugin.Tts.MicrosoftEdge.csproj" />

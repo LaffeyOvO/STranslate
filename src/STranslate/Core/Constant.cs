@@ -59,6 +59,7 @@ public class Constant
         "8eb80c0391314256a4058b464d77946a", //OpenAIOCR
         "3410e7de989340938301abd6fcf8cc4b", //WeChatOCRBuiltIn
         "2e83ee2f5dbf45249a3bd1457a326abf", //GoogleOCR
+        "bb65c593ebb04d40bc2c5ad55aecc4e2", //TencentOCR
         "86ec10628e754d41921d24387ec6e815", //Baidu
         "474b5fe844d9455ba0c59f75c1424f0d", //BigModel
         "09d6beef9b1f4891a4a0d8a8dbf510d1", //DeepL
