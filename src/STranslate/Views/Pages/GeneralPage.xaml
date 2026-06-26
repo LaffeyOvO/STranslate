@@ -170,13 +170,13 @@
                         <Setter TargetName="PoolActionIcon" Property="Icon" Value="{x:Static ui:FluentSystemIcons.SlideHide_20_Regular}" />
                         <Setter TargetName="PoolActionText" Property="Text" Value="{DynamicResource General_HideInputBox}" />
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding}" Value="{x:Static core:MainHeaderActions.HistoryNavigation}">
-                        <Setter TargetName="PoolActionIcon" Property="Icon" Value="{x:Static ui:FluentSystemIcons.AppRecent_20_Regular}" />
-                        <Setter TargetName="PoolActionText" Property="Text" Value="{DynamicResource General_ShowHistoryNavigation}" />
-                    </DataTrigger>
                     <DataTrigger Binding="{Binding}" Value="{x:Static core:MainHeaderActions.ServiceSwitcher}">
                         <Setter TargetName="PoolActionIcon" Property="Icon" Value="{x:Static ui:FluentSystemIcons.Apps_20_Regular}" />
                         <Setter TargetName="PoolActionText" Property="Text" Value="{DynamicResource ServiceQuickSwitcher}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding}" Value="{x:Static core:MainHeaderActions.HistoryNavigation}">
+                        <Setter TargetName="PoolActionIcon" Property="Icon" Value="{x:Static ui:FluentSystemIcons.AppRecent_20_Regular}" />
+                        <Setter TargetName="PoolActionText" Property="Text" Value="{DynamicResource General_ShowHistoryNavigation}" />
                     </DataTrigger>
                 </DataTemplate.Triggers>
             </DataTemplate>

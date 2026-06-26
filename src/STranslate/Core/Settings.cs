@@ -386,8 +386,8 @@ public partial class Settings : ObservableObject
         if (IsMouseHookVisible) migratedActions.Add(MainHeaderActions.MouseHook);
         if (IsColorSchemeVisible) migratedActions.Add(MainHeaderActions.ColorScheme);
         if (IsHideInputVisible) migratedActions.Add(MainHeaderActions.HideInput);
-        if (IsHistoryNavigationVisible) migratedActions.Add(MainHeaderActions.HistoryNavigation);
         if (IsServiceSwitcherVisible) migratedActions.Add(MainHeaderActions.ServiceSwitcher);
+        if (IsHistoryNavigationVisible) migratedActions.Add(MainHeaderActions.HistoryNavigation);
 
         ApplyMainHeaderVisibleActions(migratedActions);
     }
@@ -524,8 +524,8 @@ public partial class Settings : ObservableObject
         IsMouseHookVisible = actionSet.Contains(MainHeaderActions.MouseHook);
         IsColorSchemeVisible = actionSet.Contains(MainHeaderActions.ColorScheme);
         IsHideInputVisible = actionSet.Contains(MainHeaderActions.HideInput);
-        IsHistoryNavigationVisible = actionSet.Contains(MainHeaderActions.HistoryNavigation);
         IsServiceSwitcherVisible = actionSet.Contains(MainHeaderActions.ServiceSwitcher);
+        IsHistoryNavigationVisible = actionSet.Contains(MainHeaderActions.HistoryNavigation);
     }
 
     #endregion
