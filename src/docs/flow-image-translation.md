@@ -128,21 +128,20 @@
 - 用户取消执行：捕获 `TaskCanceledException`，当前实现不额外弹提示。
 
 ## 内存与生命周期
-图片翻译窗口的内存释放有两层风险点，均集中在反复新建关闭的**精简窗口**（独立窗口是单例复用，不自动关闭，不构成累积）：
+图片翻译窗口的内存释放主要涉及窗口视觉树和 ViewModel 所有权。当前修复先覆盖每次使用后自动关闭的**精简窗口**：
 
 - **窗口视觉树泄漏（已修复）**：精简窗口每次截图翻译都新建并 `OnDeactivated → Close()` 关闭。窗口内的 `ui:InfoBar` 等控件会被 WPF 静态 `System.ComponentModel.PropertyDescriptor._propertyMap` 通过 `MS.Internal.ComponentModel.DependencyObjectPropertyDescriptor` 注册 `PropertyChangeTracker`（实测追踪 `TextElement.Foreground` 等 DP）。窗口关闭后 tracker 未撤销，反向钉死整窗（含 `_sourceImage`/`_resultImage`/`RenderTargetBitmap` 的原生帧缓冲），GC 永远回收不掉。每开一次精简窗口泄漏一套窗口对象。
-  - 修复：`ImageTranslateCompactWindow.OnClosed` 在 `Dispose()` 前调用 `DetachVisualTree()`——清除每个子元素 `DataContext`、`panel.Children.Clear()`、`Content = null`、`DataContext = null`，断开控件与窗口的引用，使已关闭窗口可被 GC 回收。
+  - 修复：`ImageTranslateCompactWindow.OnClosed` 在释放独立 DI scope 前调用 `DetachVisualTree()`——清除每个子元素 `DataContext`、`panel.Children.Clear()`、`Content = null`、`DataContext = null`，断开控件与窗口的引用，使已关闭窗口可被 GC 回收。
   - 触发点在 iNKORE `InfoBar` 内部（非 STranslate 自身代码），STranslate 代码无 `PropertyDescriptor.AddValueChanged` 调用；视觉树拆解是规避手段，未改 iNKORE。
 
 - **ViewModel 被 DI root scope 钉住（已修复）**：`ImageTranslateWindowViewModel` 注册为 `Transient` 且实现 `IDisposable`。Microsoft.Extensions.DI 对从 **root container** 解析的 Disposable Transient 服务有特殊行为——会加入 root `ServiceProviderEngineScope._disposables` 跟踪列表，**永不释放**。两个窗口都走 `Ioc.Default.GetRequiredService<...>()`（root 解析），精简窗口每次新建即累积一个 VM + 其 `ExecuteAsync` 异步状态机。
   - 修复：精简窗口改用 `Ioc.Default.CreateScope()` 解析 VM，`OnClosed` 时 `scope.Dispose()` 释放 VM，使其脱离 root 跟踪列表。
   - **泄漏充要条件**：①VM 实现 `IDisposable`；②窗口反复新建关闭。两者同时满足才累积。
 
-- **其他窗口的风险评估**：`OcrWindowViewModel`、`WelcomeSetupViewModel` 虽是 Transient + IDisposable + root 解析，但对应窗口单例复用、不自动关闭，VM 跟窗口同生命周期，最多钉住 1 个实例，不构成累积泄漏。`SettingsWindowViewModel` 未实现 `IDisposable`，DI 不跟踪，无此风险。若将来发现独立窗口/OcrWindow 反复开关也累积，可用同样手法（独立 scope）修。
+- **其他窗口的风险评估**：独立图片翻译窗口、`OcrWindow` 和 `WelcomeSetupWindow` 都会关闭，且其 `IDisposable` transient VM 当前仍从 root provider 解析；反复关闭并重新创建时存在同类 DI 跟踪风险。`SettingsWindowViewModel` 未实现 `IDisposable`，没有这一条 VM 跟踪问题，但其页面 scope 和视觉树生命周期需要单独评估。
 
 - **渲染峰值优化（顺带）**：
   - `ExecuteAsync` 生成结果图时复用已缓存并 `Freeze` 的 `_sourceImage`，取消对原图的第二次 `ToBitmapImage` 解码。
-  - `ImageTranslateRenderer.GenerateTranslatedImage` 超采样加 8MP 像素预算（`SupersampleMaxPixelBudget`），放大后总像素超预算时按 `Math.Sqrt(预算/实际)` 降低 scaleFactor，避免极端尺寸截图生成过大的 `RenderTargetBitmap`。计算逻辑抽成可单测的 `ComputeSupersampleScale`。
 
 - **诊断方法**：复现泄漏后用 `dotnet-gcdump report` 看是否有 `ImageTranslateCompactWindow`/`ImageTranslateWindowViewModel` 实例数随操作次数线性增长；用 `dotnet-dump analyze` 的 `gcroot <地址>` 追踪引用链，确认是 `PropertyDescriptor._propertyMap` 静态链还是 `ServiceProviderEngineScope._disposables` 钉住。
 
@@ -170,4 +169,4 @@
 - 调整图片上选中文本行为：改 `RefreshSelectableOcrWords()`、`OcrWordBuilder` 或 `ImageZoom` 的选区逻辑。
 - 调整精简窗口定位或关闭行为：改 `ImageTranslateCompactWindow` 的 `PlaceForCapture` / `PlaceOnPhysicalWindowBounds`，选区物理坐标由 `Screenshot.GetScreenshotCaptureAsync` 经 ScreenGrab `CaptureWithRegionAsync` 直接回传。
 - 调整精简窗口布局/定位/按钮条翻向逻辑：改 `ImageTranslateCompactWindowPlacement.CreateLayout`，并补 `ImageTranslateCompactWindowPlacementTests` 对应场景；按钮条尺寸/间距常量在 `ImageTranslateCompactWindow`（`ToolbarWidth`/`GapH`/`GapV`/`WindowMargin`）。
-- 排查/修复图片翻译窗口内存泄漏：优先看"内存与生命周期"章节。精简窗口关闭走 `ImageTranslateCompactWindow.OnClosed` → `DetachVisualTree` + `_viewModel.Dispose` + `_serviceScope.Dispose`；若新增会触发属性追踪的控件，确认是否被 `PropertyDescriptor._propertyMap` 钉住。超采样缩放计算在 `ImageTranslateRenderer.ComputeSupersampleScale`，预算常量 `SupersampleMaxPixelBudget`。
+- 排查/修复图片翻译窗口内存泄漏：优先看"内存与生命周期"章节。精简窗口关闭走 `ImageTranslateCompactWindow.OnClosed` → `DetachVisualTree` + `_serviceScope.Dispose`；若新增会触发属性追踪的控件，确认是否被 `PropertyDescriptor._propertyMap` 钉住。

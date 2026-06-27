@@ -98,8 +98,7 @@ public partial class ImageTranslateCompactWindow
         // 对窗口内部控件的锚定，避免已关闭窗口被静态缓存钉死无法 GC。
         DetachVisualTree();
 
-        _viewModel.Dispose();
-        // 释放独立 DI scope，使 VM 从 root container 的 disposable 跟踪列表移除，可被 GC 回收
+        // VM 由独立 DI scope 持有，只释放 scope，避免重复调用 ViewModel.Dispose()。
         _serviceScope.Dispose();
         base.OnClosed(e);
     }
