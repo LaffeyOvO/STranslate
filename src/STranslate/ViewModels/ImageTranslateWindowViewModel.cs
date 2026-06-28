@@ -92,6 +92,7 @@ public partial class ImageTranslateWindowViewModel : ObservableObject, IDisposab
     private readonly Internationalization _i18n;
     private readonly ISnackbar _snackbar;
     private readonly INotification _notification;
+    private bool _disposed;
     // 显示/隐藏右侧文本面板时窗口宽度的换算：显示时翻倍再减去边距，隐藏时反向还原。
     private const double WidthMultiplier = 2;
     private const double WidthAdjustment = 12;
@@ -734,16 +735,30 @@ public partial class ImageTranslateWindowViewModel : ObservableObject, IDisposab
 
     public void Dispose()
     {
-        // 取消订阅事件，防止内存泄漏
-        _ocrService.Services.CollectionChanged -= OnOcrServicesCollectionChanged;
-        _ocrService.PropertyChanged -= OnOcrServicePropertyChanged;
-        foreach (var service in _ocrService.Services)
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
         {
-            service.PropertyChanged -= OnOcrEnginePropertyChanged;
+            // 取消订阅事件，防止内存泄漏
+            _ocrService.Services.CollectionChanged -= OnOcrServicesCollectionChanged;
+            _ocrService.PropertyChanged -= OnOcrServicePropertyChanged;
+            foreach (var service in _ocrService.Services)
+            {
+                service.PropertyChanged -= OnOcrEnginePropertyChanged;
+            }
+            _transCollectionView.Filter -= OnTransFilter;
+            _translateService.PropertyChanged -= OnTranServicePropertyChanged;
+            Settings.PropertyChanged -= OnSettingsPropertyChanged;
         }
-        _transCollectionView.Filter -= OnTransFilter;
-        _translateService.PropertyChanged -= OnTranServicePropertyChanged;
-        Settings.PropertyChanged -= OnSettingsPropertyChanged;
+
+        _disposed = true;
     }
 
     #endregion

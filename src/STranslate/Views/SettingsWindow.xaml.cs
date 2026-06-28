@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using iNKORE.UI.WPF.Modern.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using STranslate.Core;
 using STranslate.Helpers;
 using STranslate.Plugin;
@@ -15,14 +16,28 @@ namespace STranslate.Views;
 public partial class SettingsWindow
 {
     private readonly SettingsWindowViewModel _viewModel;
+    // 独立 DI scope：SettingsWindow 内的各 Page 及其 Page VM（HistoryViewModel 等）为 Scoped 注册。
+    // 从 root provider 解析则被 root scope 跟踪、关闭时 Dispose 永不触发（root 永不释放），
+    // 导致 Page VM 的事件订阅（如 HistoryViewModel 订阅 SelectedItems.CollectionChanged、
+    // SearchViewModelBase 订阅 i18n.OnLanguageChanged）泄漏。用独立 scope 解析并在窗口关闭时释放。
+    private readonly IServiceScope _serviceScope;
     private bool _isCodeNavi;
 
     public SettingsWindow()
     {
-        _viewModel = Ioc.Default.GetRequiredService<SettingsWindowViewModel>();
-        DataContext = _viewModel;
+        _serviceScope = Ioc.Default.CreateScope();
+        try
+        {
+            _viewModel = _serviceScope.ServiceProvider.GetRequiredService<SettingsWindowViewModel>();
+            DataContext = _viewModel;
 
-        InitializeComponent();
+            InitializeComponent();
+        }
+        catch
+        {
+            _serviceScope.Dispose();
+            throw;
+        }
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -35,16 +50,12 @@ public partial class SettingsWindow
 
     protected override void OnClosed(EventArgs e)
     {
-        try
-        {
-            RootNavigation.SelectionChanged -= OnNaviSelectionChanged;
-            RootFrame.Content = null;
-            ModernWindowLifecycle.DetachVisualTree(this);
-        }
-        finally
-        {
-            base.OnClosed(e);
-        }
+        // 先解绑导航事件并清空 Frame，再统一释放视觉树与 DI scope。
+        // 释放 scope 会触发当前已解析 Page VM 的 Dispose()（HistoryViewModel 等）。
+        RootNavigation.SelectionChanged -= OnNaviSelectionChanged;
+        RootFrame.Content = null;
+        ModernWindowLifecycle.Release(this, _serviceScope.Dispose);
+        base.OnClosed(e);
     }
 
     private void OnNaviSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -64,19 +75,22 @@ public partial class SettingsWindow
 
     public void Navigate(string tag, bool isCodeBehinde = true)
     {
+        // Page 及其 Page VM 为 Scoped 注册，统一从窗口独有 scope 解析，
+        // 关闭窗口时释放 scope 即可触发 Page VM 的 Dispose()。
+        var sp = _serviceScope.ServiceProvider;
         var content = tag switch
         {
-            nameof(GeneralPage) => Ioc.Default.GetRequiredService<GeneralPage>(),
-            nameof(TranslatePage) => Ioc.Default.GetRequiredService<TranslatePage>(),
-            nameof(OcrPage) => Ioc.Default.GetRequiredService<OcrPage>(),
-            nameof(TtsPage) => Ioc.Default.GetRequiredService<TtsPage>(),
-            nameof(VocabularyPage) => Ioc.Default.GetRequiredService<VocabularyPage>(),
-            nameof(StandalonePage) => Ioc.Default.GetRequiredService<StandalonePage>(),
-            nameof(HistoryPage) => Ioc.Default.GetRequiredService<HistoryPage>(),
-            nameof(PluginPage) => Ioc.Default.GetRequiredService<PluginPage>(),
-            nameof(HotkeyPage) => Ioc.Default.GetRequiredService<HotkeyPage>(),
-            nameof(NetworkPage) => Ioc.Default.GetRequiredService<NetworkPage>(),
-            nameof(AboutPage) => Ioc.Default.GetRequiredService < AboutPage>(),
+            nameof(GeneralPage) => sp.GetRequiredService<GeneralPage>(),
+            nameof(TranslatePage) => sp.GetRequiredService<TranslatePage>(),
+            nameof(OcrPage) => sp.GetRequiredService<OcrPage>(),
+            nameof(TtsPage) => sp.GetRequiredService<TtsPage>(),
+            nameof(VocabularyPage) => sp.GetRequiredService<VocabularyPage>(),
+            nameof(StandalonePage) => sp.GetRequiredService<StandalonePage>(),
+            nameof(HistoryPage) => sp.GetRequiredService<HistoryPage>(),
+            nameof(PluginPage) => sp.GetRequiredService<PluginPage>(),
+            nameof(HotkeyPage) => sp.GetRequiredService<HotkeyPage>(),
+            nameof(NetworkPage) => sp.GetRequiredService<NetworkPage>(),
+            nameof(AboutPage) => sp.GetRequiredService<AboutPage>(),
             _ => default(iNKORE.UI.WPF.Modern.Controls.Page)
         };
         if (isCodeBehinde)

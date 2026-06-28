@@ -50,6 +50,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private ClipboardMonitor? _clipboardMonitor;
     private bool _forceShowInputForInputTranslate;
     private bool _skipShowForNextTranslate;
+    private bool _disposed;
     private readonly object _manualTranslationTaskLock = new();
     private readonly Dictionary<string, CancellationTokenSource> _manualTranslationTaskTokens = [];
     private readonly SemaphoreSlim _manualTranslationHistoryLock = new(1, 1);
@@ -2688,28 +2689,41 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        MouseKeyHelper.MouseTextSelected -= OnMouseTextSelected;
-        MouseKeyHelper.MouseTextSelected -= OnMouseTextSelectedIncretemental;
-        _clipboardMonitor?.OnClipboardTextChanged -= OnClipboardTextChanged;
-        Settings.PropertyChanged -= OnSettingsPropertyChanged;
-        TranslateService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
-        OcrService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
-        TtsService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
-        VocabularyService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
 
-        _debounceExecutor.Dispose();
-        _clipboardMonitor?.Dispose();
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
 
-        // 如果窗口一直没打开过，恢复位置后再退出
-        if (Settings.MainWindowLeft <= -18000 && Settings.MainWindowTop <= -18000)
+        if (disposing)
         {
-            Settings.MainWindowLeft = _cacheLeft;
-            Settings.MainWindowTop = _cacheTop;
-            Settings.Save();
+            MouseKeyHelper.MouseTextSelected -= OnMouseTextSelected;
+            MouseKeyHelper.MouseTextSelected -= OnMouseTextSelectedIncretemental;
+            _clipboardMonitor?.OnClipboardTextChanged -= OnClipboardTextChanged;
+            Settings.PropertyChanged -= OnSettingsPropertyChanged;
+            TranslateService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
+            OcrService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
+            TtsService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
+            VocabularyService.Services.CollectionChanged -= OnQuickServiceCollectionChanged;
+
+            _debounceExecutor.Dispose();
+            _clipboardMonitor?.Dispose();
+
+            // 如果窗口一直没打开过，恢复位置后再退出
+            if (Settings.MainWindowLeft <= -18000 && Settings.MainWindowTop <= -18000)
+            {
+                Settings.MainWindowLeft = _cacheLeft;
+                Settings.MainWindowTop = _cacheTop;
+                Settings.Save();
+            }
+
+            _i18n.OnLanguageChanged -= OnLanguageChanged;
         }
 
-        _i18n.OnLanguageChanged -= OnLanguageChanged;
-        GC.SuppressFinalize(this);
+        _disposed = true;
     }
 
     #endregion

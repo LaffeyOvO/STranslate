@@ -21,6 +21,7 @@ public partial class WelcomeSetupViewModel : ObservableObject, IDisposable
     private readonly NotifyCollectionChangedEventHandler _translateServicesChangedHandler;
     private readonly NotifyCollectionChangedEventHandler _ocrServicesChangedHandler;
     private readonly Internationalization _i18n;
+    private bool _disposed;
 
     /// <summary>
     /// Creates wizard state from the existing settings and service managers.
@@ -243,9 +244,22 @@ public partial class WelcomeSetupViewModel : ObservableObject, IDisposable
     /// </summary>
     public void Dispose()
     {
-        TranslateService.Services.CollectionChanged -= _translateServicesChangedHandler;
-        OcrService.Services.CollectionChanged -= _ocrServicesChangedHandler;
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            TranslateService.Services.CollectionChanged -= _translateServicesChangedHandler;
+            OcrService.Services.CollectionChanged -= _ocrServicesChangedHandler;
+        }
+
+        _disposed = true;
     }
 
     private void SaveAndClose(Window window)

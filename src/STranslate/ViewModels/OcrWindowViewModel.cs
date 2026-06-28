@@ -87,6 +87,7 @@ public partial class OcrWindowViewModel : ObservableObject, IDisposable
     private const double WidthMultiplier = 2;
     private const double WidthAdjustment = 12;
     private bool _hasShownNoLocationInfoForSelectedEngine;
+    private bool _disposed;
 
     [ObservableProperty]
     public partial bool IsExecuting { get; set; } = false;
@@ -865,13 +866,27 @@ public partial class OcrWindowViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        // 取消订阅事件，防止内存泄漏
-        _ocrService.Services.CollectionChanged -= OnServicesCollectionChanged;
-        foreach (var service in _ocrService.Services)
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
         {
-            service.PropertyChanged -= OnOcrServicePropertyChanged;
+            // 取消订阅事件，防止内存泄漏
+            _ocrService.Services.CollectionChanged -= OnServicesCollectionChanged;
+            foreach (var service in _ocrService.Services)
+            {
+                service.PropertyChanged -= OnOcrServicePropertyChanged;
+            }
+            Settings.PropertyChanged -= OnSettingsPropertyChanged;
         }
-        Settings.PropertyChanged -= OnSettingsPropertyChanged;
+
+        _disposed = true;
     }
 
     #endregion
