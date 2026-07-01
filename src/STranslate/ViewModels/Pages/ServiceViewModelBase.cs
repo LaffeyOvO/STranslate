@@ -73,8 +73,8 @@ public abstract partial class ServiceViewModelBase<T>(T service) : ObservableObj
     [RelayCommand]
     private void Duplicate(Service svc)
     {
-        var service = Service.Duplicate(svc);
-        SelectedItem = service;
+        if (Service.Duplicate(svc) is Service duplicate)
+            SelectedItem = duplicate;
     }
 
     [RelayCommand]
